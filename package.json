@@ -1,0 +1,14 @@
+{
+  "name": "rymedi-smartcontract",
+  "version": "1.0.0",
+  "description": "EVM compatiable smart contracts for Rymedi",
+  "main": "npx hardhat run scripts/deploy.ts",
+  "scripts": {
+  },
+  "author": "Mayank Saxena <mayank.saxena@zeeve.io>",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "hardhat": "^2.14.0"
+  }
+}
