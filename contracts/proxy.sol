@@ -25,4 +25,28 @@ contract Proxy {
         require(success, "Construction failed");
     }
 
+    fallback() external payable {
+            assembly {
+                // solium-disable-line
+                let contractLogic := sload(contractAddressLoad)
+                calldatacopy(0x0, 0x0, calldatasize())
+                let success := delegatecall(
+                    sub(gas(), 10000),
+                    contractLogic,
+                    0x0,
+                    calldatasize(),
+                    0,
+                    0
+                )
+                let retSz := returndatasize()
+                returndatacopy(0, 0, retSz)
+                switch success
+                case 0 {
+                    revert(0, retSz)
+                }
+                default {
+                    return(0, retSz)
+                }
+            }
+        }
 }
