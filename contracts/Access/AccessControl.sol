@@ -55,9 +55,7 @@ abstract contract AccessControl is Context, IAccessControl, ERC165 {
 
     mapping(bytes32 => RoleData) private _roles;
 
-    bytes32 public constant OWNER = keccak256("OWNER");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
-    bytes32 public constant SENDER = keccak256("SENDER");
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     /**
      * @dev Modifier that checks that an account has a specific role. Reverts

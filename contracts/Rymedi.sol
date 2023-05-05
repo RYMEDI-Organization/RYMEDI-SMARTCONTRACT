@@ -3,32 +3,37 @@
 pragma solidity 0.8.19;
 import "./Proxiable.sol";
 import "./Access/AccessControl.sol";
+import "./LibraryLock.sol";
+import "hardhat/console.sol";
 
-contract Rymedi is Proxiable, AccessControl {
+contract Rymedi is Proxiable, AccessControl, LibraryLock {
 
-    bool public initalized = false;
     mapping(bytes32 => bytes32) records;
     mapping(bytes32 => bytes32) deletedRecords;
     bytes32[] keyList;
     bytes32[] deletedKeys;
+
+    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant SENDER = keccak256("SENDER");
 
     /*
      * we will calculate the sha3 of the initialize() and we will pass the hash while deploying the proxy contract.
      * This is like our constructor function.
      * We are telling our proxy contract to call this function as contructor.
      */
-    function initialize() public {
-        // require(owner() == address(0), "Already initalized");
-        // require(hasRole("OWNER", msg.sender) == address(0), "Already initalized");
-        require(!initalized, "Already initalized");
-        _setupRole("OWNER", msg.sender);
-        initalized = true;
+    function rymediInitialize() public {
+        require(!initialized, "Already initalized");
+        initialize();
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(ADMIN, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(SENDER, ADMIN);
+        // _grantRole()
     }
 
     /*
      * add record.
      */
-    function addRecord(bytes32 key, bytes32 value) public {
+    function addRecord(bytes32 key, bytes32 value) public onlySender delegatedOnly {
         // require(records[key] == 0, "Record's Key already exist");
         keyList.push(key);
         records[key] = value;
@@ -41,7 +46,7 @@ contract Rymedi is Proxiable, AccessControl {
     function addBulkRecords(
         bytes32[] memory keys,
         bytes32[] memory values
-    ) public {
+    ) public onlySender delegatedOnly {
         require(
             keys.length == values.length,
             "Lengths of keys and values arrays do not match"
@@ -62,11 +67,11 @@ contract Rymedi is Proxiable, AccessControl {
     /*
     * Delete record.
     */
-    function removeRecord(bytes32 key) public onlyAdmin returns bool {
+    function removeRecord(bytes32 key) public onlyAdministrators delegatedOnly returns (bool) {
         deletedKeys.push(key);
         deletedRecords[key] = records[key];
         records[key] = 0;
-        retuen true;
+        return true;
     }
 
     function recordCount() public view returns (uint, uint, uint) {
@@ -78,7 +83,7 @@ contract Rymedi is Proxiable, AccessControl {
      * can only be done by admin.
      * calling the updateCodeAddress of Proxiable contract.
      */
-    function updateCode(address newCode) public {
+    function updateCode(address newCode) public onlyAdministrators delegatedOnly {
         updateCodeAddress(newCode);
     }
 
@@ -102,13 +107,17 @@ contract Rymedi is Proxiable, AccessControl {
         _;
     }
 
-
+    /// @dev Restricted to members of the community.
+    modifier onlyAdministrators() {
+        require(isOwner(msg.sender) || isAdmin(msg.sender), "Restricted to Administrators.");
+        _;
+    }
 
 
     // ========================================= Access-Control ===========================================================================
 
     function isOwner(address account) public virtual view returns (bool) {
-        return hasRole(OWNER, account);
+        return hasRole(DEFAULT_ADMIN_ROLE, account);
     }
 
     function isAdmin(address account) public virtual view returns (bool) {
@@ -120,16 +129,27 @@ contract Rymedi is Proxiable, AccessControl {
     }
 
     /// @dev Add a member of the community.
-    function assignSender(address account) public virtual onlyOwner onlyAdmin {
+    function setSender(address account) public virtual onlyAdmin delegatedOnly {
         grantRole(SENDER, account);
     }
 
     /// @dev Add a member of the community.
-    function assignAdmin(address account) public virtual onlyOwner {
+    function setAdmin(address account) public onlyOwner delegatedOnly {
         grantRole(ADMIN, account);
     }
 
+    function revokeAdmin(address account) public onlyOwner delegatedOnly {
+        revokeRole(ADMIN, account);
+    }
     
+    function revokeSender(address account) public onlyAdmin delegatedOnly {
+        revokeRole(SENDER, account);
+    }
+    
+    function transferOwnership(address account) public onlyOwner delegatedOnly{
+        grantRole(DEFAULT_ADMIN_ROLE, account);
+        renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
     // ====================================================================================================================================
 
 

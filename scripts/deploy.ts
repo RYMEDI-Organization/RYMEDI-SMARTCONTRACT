@@ -47,10 +47,12 @@ async function main() {
   const logicContract = await deployLogicContract();
   // this will deploy the successor of logic contract
   // const logicContract1 = await deployLogicContract1();
-
+  console.log("logicContract", logicContract.address)
   // we have to pass this constructor function in proxy contract
-  const contructData = await web3.utils.sha3("initialize()").substring(0, 10);
+  const contructData = await web3.utils.sha3("rymediInitialize()").substring(0, 10);
+  console.log("contructData", contructData)
   const proxyContract = await deployProxyContract(contructData, logicContract);
+  console.log(proxyContract.address, "proxyContract")
 
   // Get the ABI of the logic contract
   const LogicContract = await ethers.getContractFactory("Rymedi");
@@ -70,34 +72,40 @@ async function main() {
   // Connect the contract instance to a signer
   const signer = await ethers.provider.getSigner();
   const contractWithSigner = proxy.connect(signer);
-  console.log("contractWithSigner", contractWithSigner);
+  // console.log("contractWithSigner", contractWithSigner);
 
+  const result = await contractWithSigner.initialized.call();
+  console.log("result", result)
+
+  const signers = await ethers.getSigners();
+  const [owner, admin, sender1, sender2, sender3] = await ethers.getSigners();
+  console.log("signersssssssssssssss", owner, admin, sender1, sender2, sender3)
   // Call the addRecord function on the logic contract through the proxy contract
-  const add = await contractWithSigner.addRecord(
-    "0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f",
-    "0xd4a9ed9a766b3f61d12b3e899421b2487040d960a6b1d7ffa3d18cbb97a57e34"
-  );
-  console.log(add, "1");
+  // const add = await contractWithSigner.addRecord(
+  //   "0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f",
+  //   "0xd4a9ed9a766b3f61d12b3e899421b2487040d960a6b1d7ffa3d18cbb97a57e34"
+  // );
+  // console.log(add, "1");
 
-  // method for getting the record
-  const value = await contractWithSigner.getRecord(
-    "0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f"
-  );
-  console.log(value, "2");
+  // // method for getting the record
+  // const value = await contractWithSigner.getRecord(
+  //   "0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f"
+  // );
+  // console.log(value, "2");
 
-  //updating the code of smart contract by passing new smartContract address
-  // const update = await contractWithSigner.updateCode(logicContract1.address);
-  // console.log(update)
+  // //updating the code of smart contract by passing new smartContract address
+  // // const update = await contractWithSigner.updateCode(logicContract1.address);
+  // // console.log(update)
 
-  //method for removing the record
-  const remove = await contractWithSigner.removeRecord("0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f");
-  console.log(remove, "3")
+  // //method for removing the record
+  // const remove = await contractWithSigner.removeRecord("0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f");
+  // console.log(remove, "3")
 
-    // method for getting the record
-    const valueAgain = await contractWithSigner.getRecord(
-      "0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f"
-    );
-    console.log(valueAgain,"4");
+  //   // method for getting the record
+  //   const valueAgain = await contractWithSigner.getRecord(
+  //     "0xab1f7b7600761ef53800ccb5fd8b18827e4e7f191534d11a33ebbfa5482b767f"
+  //   );
+  //   console.log(valueAgain,"4");
 }
 
 main()
