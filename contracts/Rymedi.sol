@@ -34,7 +34,7 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      * add record.
      */
     function addRecord(bytes32 key, bytes32 value) public onlySender delegatedOnly {
-        // require(records[key] == 0, "Record's Key already exist");
+        require(records[key] == 0, "Record's Key already exist");
         keyList.push(key);
         records[key] = value;
     }
