@@ -14,7 +14,7 @@ describe("Rymedi", function () {
 
         const { contract, proxyContract, logicContract } = await contractDeployment();
         const signers = await ethers.getSigners();
-        
+
         // Connect the contract instance to a signer
         const [owner, admin, sender1, sender2, sender3] = await ethers.getSigners();
         console.log("signersssssssssssssss", owner.address, admin.address, sender1.address, sender2.address, sender3.address);
@@ -26,7 +26,7 @@ describe("Rymedi", function () {
         // const contractWithSigner = contract.connect(signer);
         // console.log("contractWithSigner", contractWithSigner);
 
-        // const result = await contractWithSigner.initialized.call();
+        // const result = await contract WithSigner.initialized.call();
         // console.log("result", result)
 
         // Call the addRecord function on the logic contract through the proxy contract
@@ -61,7 +61,7 @@ describe("Rymedi", function () {
 
     describe("Add Records", function () {
         it("push records", async function () {
-            const { contract, owner, admin, sender1, sender2, sender3 } = await loadFixture(deploymentFixture);
+            const { contract, proxyContract, logicContract, owner, admin, sender1, sender2, sender3 } = await loadFixture(deploymentFixture);
             // console.log("1====================", contract)
             const contractWithOwner = contract.connect(owner);
             const contractWithAdmin = contract.connect(admin);
@@ -75,29 +75,55 @@ describe("Rymedi", function () {
             // Call the addRecord function on the logic contract through the proxy contract
             const isOwner = await contractWithOwner.isOwner(owner.address);
             const isAdmin = await contractWithOwner.isOwner(admin.address);
+            
             // const setAdmin = await contractWithOwner.assignAdmin(admin.address);
-            console.log(isOwner, isAdmin, "==================")
+            console.log(isOwner, isAdmin, "==================", await contractWithOwner.DEFAULT_ADMIN_ROLE())
             expect(isOwner).to.equal(true);
             expect(isAdmin).to.equal(false);
-
-            const setAdmin = await contractWithOwner.setAdmin(admin.address);
+            console.log("uuu")
+            const roles = await contractWithOwner.rolesList();
+            console.log("rolesssssssssssss", roles);
+            const SENDER = await contractWithOwner.SENDER();
+            const ADMIN = await contractWithOwner.ADMIN();
+            const OWNER = await contractWithOwner.DEFAULT_ADMIN_ROLE();
+            // const setAdmin = await contractWithOwner.setAdmin(admin.address);
+            // ADMIN, account, msg.sender
+            let ownerAddress = owner.address
+            // expect(await contractWithOwner.setAdmin(admin.address)).to.emit(ADMIN , admin.address, ownerAddress);
+            expect(await contractWithOwner.setAdmin(admin.address)).to.emit(logicContract , "RoleGranted").withArgs(ADMIN, admin.address, ownerAddress);
+            console.log("emitttttttttttttttt")
             const isAdminR = await contractWithAdmin.isAdmin(admin.address);
             expect(isAdminR).to.equal(true);
 
+            // await expect(hardhatToken.connect(addr1).transfer(addr2.address, 50))
+            //     .to.emit(hardhatToken, "Transfer")
+            //     .withArgs(addr1.address, addr2.address, 50);
+            //     emit Transfer(msg.sender, to, amount);
+
+            // await expect(
+            //     hardhatToken.connect(addr1).transfer(owner.address, 1)
+            // ).to.be.revertedWith("Not enough tokens");
+
+
             console.log("======ppppppp=======");
             const setSender1 = await contractWithAdmin.setSender(sender1.address);
+            // const setSender1 = await contractWithAdmin.grantRole(sender1.address);
             console.log("======uuuuuuuuuuuuu=======");
             const setSender2 = await contractWithAdmin.setSender(sender2.address);
             console.log(setSender1, "======tttttt=======", setSender2);
             // const k1 = hash("k1");
             // const v1 = ethers.utils.sha256("v1");
-            console.log( "---hh-----")
-            const send1 = await contractWithSender1.addRecord(hash("k1"), hash("v1"));
+            console.log("---hh-----")
+            expect(await contractWithSender1.addRecord(hash("k1"), hash("v1"))).to.emit(logicContract, "AddRecord").withArgs(hash("k2"), hash("v1"));
             const get1 = await contractWithAdmin.getRecord(hash("k1"));
             const get2 = await contractWithAdmin.getRecord(hash("v1"));
             console.log(get1, get2, "======ppppppp=======");
             expect(get1).to.equal(hash("v1"));
             expect(get2).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
+
+            const adminRoleAdmin = await contractWithOwner.getRoleAdmin(ADMIN);
+            console.log("adminRoleAdmin", adminRoleAdmin)
+
 
             const send2 = await contractWithSender2.addRecord(hash("k2"), hash("v2"));
             const get3 = await contractWithAdmin.getRecord(hash("k2"));
@@ -106,17 +132,32 @@ describe("Rymedi", function () {
             expect(get3).to.equal(hash("v2"));
             expect(get4).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
 
-            const send3 = await contractWithSender2.addBulkRecords([hash("k3"),hash("k4")], [hash("v3"),hash("v4")]);
+            const send3 = await contractWithSender2.addBulkRecords([hash("k3"), hash("k4")], [hash("v3"), hash("v4")]);
             const get5 = await contractWithAdmin.getRecord(hash("k3"));
             const get6 = await contractWithAdmin.getRecord(hash("k4"));
             console.log(get5, get6, "======kkkkkkkkkkkkkkkkk=======");
             expect(get5).to.equal(hash("v3"));
             expect(get6).to.equal(hash("v4"));
 
+            console.log("ffffffffffffffffffff", await contractWithSender1.recordCount())
+
+            const recordKeyList = await contractWithOwner.getRecordKeyList();
+            console.log("recordKeyList", recordKeyList);
+
             const remove1 = await contractWithOwner.removeRecord(hash("k4"));
             const getR1 = await contractWithAdmin.getRecord(hash("k4"));
+            const getR2 = await contractWithAdmin.getRecord(hash("k3"));
+
             expect(getR1).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-            console.log(getR1, "======cccccccccccc=======");
+            console.log(getR1, "======cccccccccccc=======", getR2);
+
+            const recordKeyList2 = await contractWithOwner.getRecordKeyList();
+            console.log("recordKeyList2", recordKeyList2);
+            console.log(await contractWithAdmin.getKeyAgainstIndex(1));
+
+            const deletedRecordKeys = await contractWithOwner.getDeletedRecordKeys();
+            console.log("deletedRecordKeys", deletedRecordKeys);
+            console.log(await contractWithAdmin.getDeletedKeyAgainstIndex(0));
 
             const rev1 = await contractWithAdmin.revokeSender(sender1.address);
             const res1 = await contractWithSender1.isSender(sender1.address)
@@ -124,7 +165,7 @@ describe("Rymedi", function () {
 
             const transferOwnerhip = await contractWithOwner.transferOwnership(sender1.address)
             expect(await contractWithOwner.isOwner(sender1.address)).to.equal(true);
-            console.log("ffffffffffffffffffff")
+            console.log("ffffffffffffffffffff", await contractWithSender1.recordCount())
             // const send4 = await contractWithSender1.addRecord(hash("k5"), hash("v5"));
             // const get7 = await contractWithAdmin.getRecord(hash("k5"));
             // // const get2 = await contractWithAdmin.getRecord(hash("v1"));

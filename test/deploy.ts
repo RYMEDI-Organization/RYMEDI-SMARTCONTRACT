@@ -28,6 +28,7 @@ async function deployProxyContract(constructData: any, logicContract: any) {
 }
 
 
+
 export async function contractDeployment() {
     //this will deploy the logic contract
     const logicContract = await deployLogicContract();
@@ -61,6 +62,11 @@ export async function contractDeployment() {
 }
 
 export function hash(value) {
+    return "0x" + CryptoJS.SHA256(value).toString(CryptoJS.enc.Hex);
+
+}
+
+export function keckkak(value) {
     return "0x" + CryptoJS.SHA256(value).toString(CryptoJS.enc.Hex);
 
 }

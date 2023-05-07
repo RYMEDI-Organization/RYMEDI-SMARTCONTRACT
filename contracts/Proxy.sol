@@ -2,6 +2,12 @@
 
 pragma solidity 0.8.19;
 
+/**
+ * @title Rymedi Proxy contract for Data storage
+ * @author Mayank Saxena (@forkblocks)
+ * @notice Contract stores data and delegates call to Logic contract
+ * @dev ERC-1822: UUPS
+ */
 contract Proxy {
     // Code position in storage is keccak256("PROXIABLE") = "0xc5f16f0fcc639fa48a6947836d9850f504798523bf8c9a3a87d5876cf622bcf7"
     constructor(bytes memory constructData, address contractLogic) {
