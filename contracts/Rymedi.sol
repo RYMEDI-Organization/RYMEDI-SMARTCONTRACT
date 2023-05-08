@@ -105,5 +105,15 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
         updateCodeAddress(newLogicAddress, msg.sender);
     }
-    
+
+    // =========================================  Getter functions ========================================================================
+
+    /**
+     * @notice Fetch value against key from Records
+     * @param key bytes32 - sha256 hash
+     */
+    function getRecord(bytes32 key) public view returns (bytes32) {
+        return records[key];
+    }
+
 }
