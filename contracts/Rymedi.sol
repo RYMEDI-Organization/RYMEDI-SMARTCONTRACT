@@ -40,4 +40,20 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setRoleAdmin(SENDER, ADMIN);
     }
+
+    /**
+     * @notice Push single record - Only SENDER
+     * @param key bytes32 - sha256 hash
+     * @param value bytes32 - sha256 hash
+     */
+    function addRecord(
+        bytes32 key,
+        bytes32 value
+    ) public onlyRole(SENDER) delegatedOnly returns (bool) {
+        require(records[key] == 0, "Record's Key already exist");
+        records[key] = value;
+        recordKeyList.push(key);
+        emit AddRecord(key, value);
+        return true;
+    }
 }
