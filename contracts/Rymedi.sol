@@ -94,5 +94,16 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         emit RemoveRecord(key, value);
         return true;
     }
+
+    /**
+     * @notice Updates the address of Logic contract inside Proxy
+     * @param newLogicAddress address
+     * @dev Only Owner - Used to update the implemented logic
+     */
+    function updateCode(
+        address newLogicAddress
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
+        updateCodeAddress(newLogicAddress, msg.sender);
+    }
     
 }
