@@ -78,5 +78,21 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         }
         return true;
     }
+
+    /**
+     * @notice Delete records against keys
+     * @param key bytes32 - sha256 hash
+     * @dev Delete keys are stored and emitted via events
+     */
+    function removeRecord(
+        bytes32 key
+    ) public onlyAdministrators delegatedOnly returns (bool) {
+        bytes32 value = records[key];
+        deletedRecordKeys.push(key);
+        deletedRecords[key] = records[key];
+        records[key] = 0;
+        emit RemoveRecord(key, value);
+        return true;
+    }
     
 }
