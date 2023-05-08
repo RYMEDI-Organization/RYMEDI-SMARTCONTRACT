@@ -158,4 +158,19 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     function getDeletedRecordKeys() public view returns (bytes32[] memory) {
         return deletedRecordKeys;
     }
+
+    // ========================================= Modifiers ================================================================================
+
+    /**
+     * @notice Modifier - Implement either Owner or Admin
+     */
+    modifier onlyAdministrators() {
+        require(
+            isOwner(msg.sender) || isAdmin(msg.sender),
+            "Restricted to Administrators."
+        );
+        _;
+    }
+
+    // ====================================================================================================================================
 }
