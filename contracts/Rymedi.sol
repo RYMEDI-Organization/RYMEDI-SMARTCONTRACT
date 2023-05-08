@@ -56,4 +56,27 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         emit AddRecord(key, value);
         return true;
     }
+
+    /**
+     * @notice Push multiple records in  single transaction - Only SENDER
+     * @param keys bytes32 - sha256 hash
+     * @param values bytes32 - sha256 hash
+     */
+    function addBulkRecords(
+        bytes32[] memory keys,
+        bytes32[] memory values
+    ) public onlyRole(SENDER) delegatedOnly returns (bool) {
+        require(
+            keys.length == values.length,
+            "Lengths of keys and values arrays do not match"
+        );
+        for (uint i = 0; i < keys.length; i++) {
+            require(records[keys[i]] == 0, "Record's Key already exist");
+            records[keys[i]] = values[i];
+            recordKeyList.push(keys[i]);
+            emit AddRecord(keys[i], values[i]);
+        }
+        return true;
+    }
+    
 }
