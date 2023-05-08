@@ -116,4 +116,46 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         return records[key];
     }
 
+    /**
+     * @notice Fetch record count stats
+     * @return totalKeyCount Total count of pushed records
+     * @return deletedKeyCount Number of deleted keys
+     * @return activeRecordsCount Number of Keys with Value
+     */
+    function recordCount()
+        public
+        view
+        returns (
+            uint totalKeyCount,
+            uint deletedKeyCount,
+            uint activeRecordsCount
+        )
+    {
+        return (
+            recordKeyList.length,
+            deletedRecordKeys.length,
+            recordKeyList.length - deletedRecordKeys.length
+        );
+    }
+
+    /**
+     * @notice List all role types
+     */
+    function rolesList() public view returns (string[] memory) {
+        return roles;
+    }
+
+    /**
+     * @notice List all keys pushed
+     */
+    function getRecordKeyList() public view returns (bytes32[] memory) {
+        return recordKeyList;
+    }
+
+    /**
+     * @notice List all deleted keys
+     */
+    function getDeletedRecordKeys() public view returns (bytes32[] memory) {
+        return deletedRecordKeys;
+    }
 }
