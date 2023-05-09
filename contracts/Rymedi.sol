@@ -37,11 +37,11 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     function rymediInitialize() public {
         require(!initialized, "Already initalized");
         initialize();
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(SENDER, ADMIN);
         roles.push("DEFAULT_ADMIN_ROLE");
         roles.push("ADMIN");
         roles.push("SENDER");
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setRoleAdmin(SENDER, ADMIN);
     }
 
     /**
@@ -259,7 +259,7 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      */
     function revokeSender(
         address account
-    ) public onlyAdministrators delegatedOnly {
+    ) public onlyRole(ADMIN) delegatedOnly {
         revokeRole(SENDER, account);
     }
 
