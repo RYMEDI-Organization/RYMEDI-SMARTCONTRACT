@@ -187,5 +187,16 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         grantRole(ADMIN, account);
     }
 
+    /**
+     * @notice Transfer contract Ownership
+     * @param account address
+     * @dev Remove and transfer OWNER/DEFAULT_ADMIN_ROLE role to account
+     */
+    function transferOwnership(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
+        grantRole(DEFAULT_ADMIN_ROLE, account);
+        renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
     // ====================================================================================================================================
 }
