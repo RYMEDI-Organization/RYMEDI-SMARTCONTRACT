@@ -214,5 +214,25 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         grantRole(DEFAULT_ADMIN_ROLE, account);
         renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
+
+    /**
+     * @notice Verify if parameter account is SENDER
+     * @param account address
+     */
+    function isSender(address account) public view virtual returns (bool) {
+        return hasRole(SENDER, account);
+    }
+
+    /**
+     * @notice Set role as SENDER
+     * @param account address
+     * @dev Only administrators allowed to add senders
+     */
+    function setSender(
+        address account
+    ) public virtual onlyAdministrators delegatedOnly {
+        grantRole(SENDER, account);
+    }
+
     // ====================================================================================================================================
 }
