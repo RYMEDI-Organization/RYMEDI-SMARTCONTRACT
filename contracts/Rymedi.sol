@@ -234,5 +234,27 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         grantRole(SENDER, account);
     }
 
+    /**
+     * @notice Remove key from ADMIN access
+     * @param account address
+     * @dev Only Owner allowed to add new Admins
+     */
+    function revokeAdmin(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
+        revokeRole(ADMIN, account);
+    }
+
+    /**
+     * @notice Remove key from SENDER access
+     * @param account address
+     * @dev Only Administrators allowed to revoke senders access
+     */
+    function revokeSender(
+        address account
+    ) public onlyRole(ADMIN) delegatedOnly {
+        revokeRole(SENDER, account);
+    }
+
     // ====================================================================================================================================
 }
