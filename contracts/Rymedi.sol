@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity 0.8.19;
+pragma solidity 0.8.18;
 import "./Proxiable.sol";
+import "./Access/AccessControl.sol";
+import "./LibraryLock.sol";
 
 /**
  * @title Rymedi logic contract for Data storage
@@ -170,6 +172,19 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
             "Restricted to Administrators."
         );
         _;
+    }
+
+    // ====================================================================================================================================
+
+    /**
+     * @notice Set role as ADMIN for the account
+     * @param account address
+     * @dev Only Owner allowed to add new Admins
+     */
+    function setAdmin(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
+        grantRole(ADMIN, account);
     }
 
     // ====================================================================================================================================
