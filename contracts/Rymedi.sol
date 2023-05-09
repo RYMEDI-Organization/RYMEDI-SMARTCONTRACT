@@ -174,7 +174,15 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         _;
     }
 
-    // ====================================================================================================================================
+    // ========================================= Access-Control ===========================================================================
+
+    /**
+     * @notice Verify if parameter account is ADMIN
+     * @param account address
+     */
+    function isAdmin(address account) public view virtual returns (bool) {
+        return hasRole(ADMIN, account);
+    }
 
     /**
      * @notice Set role as ADMIN for the account
