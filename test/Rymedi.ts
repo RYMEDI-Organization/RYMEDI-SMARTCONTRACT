@@ -280,15 +280,15 @@ describe("Rymedi", function () {
       expect(result).to.deep.equal([key1, key2]);
     });
 
-    // it("should not remove a non-existent record", async function () {
-    //   const nonExistentKey = hash("KEY_229384");
-    //   // Try to remove a non-existent record
-    //   await expect(
-    //     Contract.connect(admin).removeRecord(
-    //       nonExistentKey
-    //     )
-    //   ).to.be.reverted;
-    // });
+    it("should not remove a non-existent record", async function () {
+      const nonExistentKey = hash("KEY_229384");
+      // Try to remove a non-existent record
+      await expect(
+        Contract.connect(admin).removeRecord(
+          nonExistentKey
+        )
+      ).to.be.reverted;
+    });
 
     it("should only be callable by administrators", async function () {
       const key = hash("KEY_ADMIN_TEST");
