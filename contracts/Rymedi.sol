@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "./Proxiable.sol";
 import "./Access/AccessControl.sol";
 import "./LibraryLock.sol";
-import "hardhat/console.sol";
 
 /**
  * @title Rymedi logic contract for Data storage
@@ -13,10 +12,11 @@ import "hardhat/console.sol";
  */
 contract Rymedi is Proxiable, AccessControl, LibraryLock {
     /// @dev variables
+    string public name;
+    uint public totalKeyCount;
+    uint public deletedKeyCount;
     mapping(bytes32 => bytes32) records;
     mapping(bytes32 => bytes32) deletedRecords;
-    bytes32[] recordKeyList;
-    bytes32[] deletedRecordKeys;
     string[] roles;
 
     /// @dev Owner - DEFAULT_ADMIN_ROLE + user roles
@@ -34,14 +34,15 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      * This is like our constructor function.
      * We are telling our proxy contract to call this function as contructor.
      */
-    function rymediInitialize() public {
+    function rymediInitialize(string memory _name) public {
         require(!initialized, "Already initalized");
         initialize();
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setRoleAdmin(SENDER, ADMIN);
+        name = _name;
         roles.push("DEFAULT_ADMIN_ROLE");
         roles.push("ADMIN");
         roles.push("SENDER");
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(SENDER, ADMIN);
     }
 
     /**
@@ -53,10 +54,7 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         bytes32 key,
         bytes32 value
     ) public onlyRole(SENDER) delegatedOnly returns (bool) {
-        require(records[key] == 0, "Record's Key already exist");
-        records[key] = value;
-        recordKeyList.push(key);
-        emit AddRecord(key, value);
+        _addRecord(key, value);
         return true;
     }
 
@@ -74,11 +72,24 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
             "Lengths of keys and values arrays do not match"
         );
         for (uint i = 0; i < keys.length; i++) {
-            require(records[keys[i]] == 0, "Record's Key already exist");
-            records[keys[i]] = values[i];
-            recordKeyList.push(keys[i]);
-            emit AddRecord(keys[i], values[i]);
+            _addRecord(keys[i], values[i]);
         }
+        return true;
+    }
+
+    /**
+     * @notice Push single record - Only SENDER
+     * @param key bytes32 - sha256 hash
+     * @param value bytes32 - sha256 hash
+     */
+    function _addRecord(
+        bytes32 key,
+        bytes32 value
+    ) internal onlyRole(SENDER) delegatedOnly returns (bool) {
+        require(records[key] == 0, "Record's Key already exist");
+        records[key] = value;
+        totalKeyCount++;
+        emit AddRecord(key, value);
         return true;
     }
 
@@ -90,10 +101,10 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     function removeRecord(
         bytes32 key
     ) public onlyAdministrators delegatedOnly returns (bool) {
+        require(records[key] != 0, "No record found against this key");
         bytes32 value = records[key];
-        deletedRecordKeys.push(key);
-        deletedRecords[key] = records[key];
         records[key] = 0;
+        deletedKeyCount++;
         emit RemoveRecord(key, value);
         return true;
     }
@@ -125,19 +136,11 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      * @return deletedKeyCount Number of deleted keys
      * @return activeRecordsCount Number of Keys with Value
      */
-    function recordCount()
-        public
-        view
-        returns (
-            uint totalKeyCount,
-            uint deletedKeyCount,
-            uint activeRecordsCount
-        )
-    {
+    function recordCount() public view returns (uint, uint, uint) {
         return (
-            recordKeyList.length,
-            deletedRecordKeys.length,
-            recordKeyList.length - deletedRecordKeys.length
+            totalKeyCount,
+            deletedKeyCount,
+            totalKeyCount - deletedKeyCount
         );
     }
 
@@ -146,38 +149,6 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      */
     function rolesList() public view returns (string[] memory) {
         return roles;
-    }
-
-    /**
-     * @notice List all keys pushed
-     */
-    function getRecordKeyList() public view returns (bytes32[] memory) {
-        return recordKeyList;
-    }
-
-    /**
-     * @notice Fetch key against Index
-     * @param index uint
-     */
-    function getKeyAgainstIndex(uint index) public view returns (bytes32) {
-        return recordKeyList[index];
-    }
-
-    /**
-     * @notice List all deleted keys
-     */
-    function getDeletedRecordKeys() public view returns (bytes32[] memory) {
-        return deletedRecordKeys;
-    }
-
-    /**
-     * @notice Get deleted Ket against Index
-     * @param index uint
-     */
-    function getDeletedKeyAgainstIndex(
-        uint index
-    ) public view returns (bytes32) {
-        return deletedRecordKeys[index];
     }
 
     // ========================================= Modifiers ================================================================================
@@ -196,6 +167,14 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     // ========================================= Access-Control ===========================================================================
 
     /**
+     * @notice Verify if parameter account is ADMIN
+     * @param account address
+     */
+    function isAdmin(address account) public view virtual returns (bool) {
+        return hasRole(ADMIN, account);
+    }
+
+    /**
      * @notice Verify if parameter account is Owner/DEFAULT_ADMIN_ROLE
      * @param account address
      */
@@ -204,11 +183,26 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     }
 
     /**
-     * @notice Verify if parameter account is ADMIN
+     * @notice Set role as ADMIN for the account
      * @param account address
+     * @dev Only Owner allowed to add new Admins
      */
-    function isAdmin(address account) public view virtual returns (bool) {
-        return hasRole(ADMIN, account);
+    function setAdmin(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
+        grantRole(ADMIN, account);
+    }
+
+    /**
+     * @notice Transfer contract Ownership
+     * @param account address
+     * @dev Remove and transfer OWNER/DEFAULT_ADMIN_ROLE role to account
+     */
+    function transferOwnership(
+        address account
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
+        grantRole(DEFAULT_ADMIN_ROLE, account);
+        renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
@@ -228,17 +222,6 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         address account
     ) public virtual onlyAdministrators delegatedOnly {
         grantRole(SENDER, account);
-    }
-
-    /**
-     * @notice Set role as ADMIN for the account
-     * @param account address
-     * @dev Only Owner allowed to add new Admins
-     */
-    function setAdmin(
-        address account
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
-        grantRole(ADMIN, account);
     }
 
     /**
@@ -263,16 +246,5 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         revokeRole(SENDER, account);
     }
 
-    /**
-     * @notice Transfer contract Ownership
-     * @param account address
-     * @dev Remove and transfer OWNER/DEFAULT_ADMIN_ROLE role to account
-     */
-    function transferOwnership(
-        address account
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
-        grantRole(DEFAULT_ADMIN_ROLE, account);
-        renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    }
     // ====================================================================================================================================
 }

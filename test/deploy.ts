@@ -1,7 +1,8 @@
 // scripts/test.js
 import CryptoJS from 'crypto-js';
 const { ethers } = require("hardhat");
-const web3 = require("web3");
+const Web3 = require("web3");
+const web3 = new Web3();
 
 
 // Define the logic contract
@@ -37,11 +38,26 @@ export async function contractDeployment() {
     // this will deploy the successor of logic contract
     // const logicContract1 = await deployLogicContract1();
     // we have to pass this constructor function in proxy contract
+    console.log(web3.eth.abi, "===============================")
+    // const contructData = await web3.utils.sha3("rymediInitialize(string)").substring(0, 10);
+    const functionSignature = await web3.eth.abi.encodeParameters(["string"], ["RymediTesting"]);
+    console.log("0000000000000000", functionSignature)
+    let _initData = web3.eth.abi.encodeFunctionCall({
+        name: 'rymediInitialize',
+        type: 'function',
+        inputs: [{type: 'string', name: '_name'}]}, ["RymediTesting"]);
 
-    const contructData = await web3.utils.sha3("rymediInitialize()").substring(0, 10);
-    console.log("contructData", contructData)
-    const proxyContract = await deployProxyContract(contructData, logicContract);
+    // const arg = web3.eth.abi.encodeParameter('string', 'rymediTesting');
+    const encodedData = _initData;
+    // const encodedData = functionSignature + arg.substring(2);
+
+
+    // const contructData = await web3.utils.sha3("rymediInitialize(PHI)").substring(0, 10);
+    console.log("contructData", encodedData)
+    const proxyContract = await deployProxyContract(encodedData, logicContract);
     console.log(proxyContract.address, "proxyContract")
+
+
 
     // Get the ABI of the logic contract
     const LogicContract = await ethers.getContractFactory("Rymedi");
@@ -63,10 +79,8 @@ export async function contractDeployment() {
 
 export function hash(value) {
     return "0x" + CryptoJS.SHA256(value).toString(CryptoJS.enc.Hex);
-
 }
 
 export function keckkak(value) {
     return "0x" + CryptoJS.SHA256(value).toString(CryptoJS.enc.Hex);
-
 }
