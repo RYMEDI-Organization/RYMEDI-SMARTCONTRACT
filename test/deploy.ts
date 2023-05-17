@@ -1,7 +1,8 @@
-import { Contract } from 'ethers';
+import { Contract } from "ethers";
 
 const { ethers } = require("hardhat");
-const web3 = require("web3");
+const Web3 = require("web3");
+const web3 = new Web3();
 
 // Define the logic contract
 async function deployLogicContract() {
@@ -14,7 +15,10 @@ async function deployLogicContract() {
 }
 
 // Define the proxy contract
-async function deployProxyContract(constructData: string, logicContract: Contract) {
+async function deployProxyContract(
+  constructData: string,
+  logicContract: Contract
+) {
   const ProxyContract = await ethers.getContractFactory("Proxy");
   const proxyContract = await ProxyContract.deploy(
     constructData,
@@ -31,10 +35,28 @@ export async function contractDeployment() {
   const logicContract = await deployLogicContract();
   // we have to pass this constructor function in proxy contract
 
-  const contructData = await web3.utils
-    .sha3("rymediInitialize()")
-    .substring(0, 10);
-  const proxyContract = await deployProxyContract(contructData, logicContract);
+  // const contructData = await web3.utils
+  //   .sha3("rymediInitialize()")
+  //   .substring(0, 10);
+  const functionSignature = await web3.eth.abi.encodeParameters(
+    ["string"],
+    ["RymediTesting"]
+  );
+
+  console.log("0000000000000000", functionSignature);
+
+  let _initData = await web3.eth.abi.encodeFunctionCall(
+    {
+      name: "rymediInitialize",
+
+      type: "function",
+
+      inputs: [{ type: "string", name: "_name" }],
+    },
+    ["RymediTesting"]
+  );
+  const encodedData = _initData;
+  const proxyContract = await deployProxyContract(encodedData, logicContract);
 
   // Get the ABI of the logic contract
   const LogicContract = await ethers.getContractFactory("Rymedi");
@@ -49,5 +71,3 @@ export async function contractDeployment() {
 
   return { contract, proxyContract, logicContract };
 }
-
-

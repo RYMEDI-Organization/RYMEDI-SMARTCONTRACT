@@ -125,15 +125,15 @@ describe("Admin", function () {
       ).to.be.reverted;
     });
 
-    it("should revert if address does not have sender role", async function () {
+    // **This is getting failed, we have to look at this**
 
+    it("should revert if address does not have sender role", async function () {
       // set up a non-sender role and assign it to an address
-      await Contract.connect(owner).setAdmin(adminAddress)
+      await Contract.connect(owner).setAdmin(adminAddress);
       // attempt to revoke the sender role from an address that does not have it
-      console.log(await Contract.hasRole(senderRole, firstSenderAddress))
-      await expect(
-        Contract.connect(admin).revokeSender(firstSenderAddress)
-      ).to.be.reverted;
+      console.log(await Contract.hasRole(senderRole, firstSenderAddress));
+      await expect(Contract.connect(admin).revokeSender(firstSenderAddress)).to
+        .be.reverted;
     });
 
     it("should revoke sender role from address", async function () {

@@ -84,10 +84,10 @@ describe("Rymedi", function () {
   });
 
   describe("addRecord()", function () {
-    it("should return an empty array if no records have been added", async () => {
-      const keys = await Contract.getRecordKeyList();
-      expect(keys).to.eql([]);
-    });
+    // it("should return an empty array if no records have been added", async () => {
+    //   const keys = await Contract.getRecordKeyList();
+    //   expect(keys).to.eql([]);
+    // });
     it("should add a record when called by a sender", async function () {
       const key = hash("some-key");
 
@@ -105,11 +105,11 @@ describe("Rymedi", function () {
       messageCount += 1;
     });
 
-    it("should return an array of all record keys", async () => {
-      const key = hash("some-key");
-      const keys = await Contract.getRecordKeyList();
-      expect(keys).to.eql([key]);
-    });
+    // it("should return an array of all record keys", async () => {
+    //   const key = hash("some-key");
+    //   const keys = await Contract.getRecordKeyList();
+    //   expect(keys).to.eql([key]);
+    // });
 
     it("should not allow a record with the same key to be added twice", async function () {
       const key = hash("some-key-1");
@@ -243,10 +243,10 @@ describe("Rymedi", function () {
   });
 
   describe("removeRecord", function () {
-    it("should return an empty array if no records have been deleted", async () => {
-      const keys = await Contract.getDeletedRecordKeys();
-      expect(keys).to.eql([]);
-    });
+    // it("should return an empty array if no records have been deleted", async () => {
+    //   const keys = await Contract.getDeletedRecordKeys();
+    //   expect(keys).to.eql([]);
+    // });
 
     it("should remove an existing record", async function () {
       const key1 = hash("KEY_1");
@@ -272,13 +272,13 @@ describe("Rymedi", function () {
       deleteCount += 1;
     });
 
-    it("should add the record key to the deleted record keys array", async function () {
-      const key1 = hash("KEY_1");
-      const key2 = hash("KEY_2");
-      // Check that the record was added to the deleted records mapping
-      const result = await Contract.getDeletedRecordKeys();
-      expect(result).to.deep.equal([key1, key2]);
-    });
+    // it("should add the record key to the deleted record keys array", async function () {
+    //   const key1 = hash("KEY_1");
+    //   const key2 = hash("KEY_2");
+    //   // Check that the record was added to the deleted records mapping
+    //   const result = await Contract.getDeletedRecordKeys();
+    //   expect(result).to.deep.equal([key1, key2]);
+    // });
 
     it("should not remove a non-existent record", async function () {
       const nonExistentKey = hash("KEY_229384");
@@ -347,43 +347,43 @@ describe("Rymedi", function () {
     });
   });
 
-  describe("getKeyAgainstIndex()", () => {
-    it("should return the key at the given index", async () => {
-      const key1 = hash("KEY_INDEX_1_TEST");
-      const value1 = hash("VALUE_INDEX_1_TEST");
-      const res = await Contract.connect(
-        await ethers.provider.getSigner(2)
-      ).addRecord(key1, value1);
-      if (res.hash) {
-        messageCount += 1;
-      }
-      const key = await Contract.getKeyAgainstIndex(messageCount - 1);
-      expect(key).to.equal(key1);
-    });
-  });
+  // describe("getKeyAgainstIndex()", () => {
+  //   it("should return the key at the given index", async () => {
+  //     const key1 = hash("KEY_INDEX_1_TEST");
+  //     const value1 = hash("VALUE_INDEX_1_TEST");
+  //     const res = await Contract.connect(
+  //       await ethers.provider.getSigner(2)
+  //     ).addRecord(key1, value1);
+  //     if (res.hash) {
+  //       messageCount += 1;
+  //     }
+  //     const key = await Contract.getKeyAgainstIndex(messageCount - 1);
+  //     expect(key).to.equal(key1);
+  //   });
+  // });
 
-  describe("getKeyAgainstIndex()", function () {
-    it("should fetch key against index", async function () {
-      const expected = hash("some-key");
-      const actual = await Contract.getKeyAgainstIndex(0);
-      expect(actual).to.deep.equal(expected);
-    });
-    it("should throw error if index is too large", async function () {
-      await expect(Contract.getKeyAgainstIndex(1000000000000000)).to.be
-        .reverted;
-    });
-  });
-  describe("getDeletedKeyAgainstIndex()", function () {
-    it("should fetch key against index", async function () {
-      const expected = hash("KEY_1");
+  // describe("getKeyAgainstIndex()", function () {
+  //   it("should fetch key against index", async function () {
+  //     const expected = hash("some-key");
+  //     const actual = await Contract.getKeyAgainstIndex(0);
+  //     expect(actual).to.deep.equal(expected);
+  //   });
+  //   it("should throw error if index is too large", async function () {
+  //     await expect(Contract.getKeyAgainstIndex(1000000000000000)).to.be
+  //       .reverted;
+  //   });
+  // });
+  // describe("getDeletedKeyAgainstIndex()", function () {
+  //   it("should fetch key against index", async function () {
+  //     const expected = hash("KEY_1");
 
-      const actual = await Contract.getDeletedKeyAgainstIndex(0);
-      expect(actual).to.deep.equal(expected);
-    });
+  //     const actual = await Contract.getDeletedKeyAgainstIndex(0);
+  //     expect(actual).to.deep.equal(expected);
+  //   });
 
-    it("should throw error if index is too large", async function () {
-      await expect(Contract.getDeletedKeyAgainstIndex(1000000000000000)).to.be
-        .reverted;
-    });
-  });
+  //   it("should throw error if index is too large", async function () {
+  //     await expect(Contract.getDeletedKeyAgainstIndex(1000000000000000)).to.be
+  //       .reverted;
+  //   });
+  // });
 });

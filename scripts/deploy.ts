@@ -1,7 +1,8 @@
 import { Contract } from "ethers";
 
 const { ethers } = require("hardhat");
-const web3 = require("web3");
+const Web3 = require("web3");
+const web3 = new Web3();
 
 // Define the logic contract
 async function deployLogicContract() {
@@ -31,13 +32,21 @@ async function deployProxyContract(
 
 export async function contractDeployment() {
   //this will deploy the logic contract
+
   const logicContract = await deployLogicContract();
   // we have to pass this constructor function in proxy contract
 
-  const contructData = await web3.utils
-    .sha3("rymediInitialize()")
-    .substring(0, 10);
-  const proxyContract = await deployProxyContract(contructData, logicContract);
+  const encodedData = await web3.eth.abi.encodeFunctionCall(
+    {
+      name: "rymediInitialize",
+
+      type: "function",
+
+      inputs: [{ type: "string", name: "_name" }],
+    },
+    ["RymediTesting"]
+  );
+  const proxyContract = await deployProxyContract(encodedData, logicContract);
 
   // Get the ABI of the logic contract
   const LogicContract = await ethers.getContractFactory("Rymedi");
@@ -49,12 +58,45 @@ export async function contractDeployment() {
     logicContractInterface,
     ethers.provider
   );
-  const [owner, admin, sender] = await ethers.getSigners();
-  const adminAddress = await admin.getAddress();
-  const senderAddress = await sender.getAddress();
 
-  await contract.connect(owner).setAdmin(adminAddress);
-  await contract.connect(admin).setSender(senderAddress);
+  // Destructuring assignment to obtain the signers
+  const [owner, admin, sender1, sender2, sender3, newOwner] =
+    await ethers.getSigners();
+
+  // Retrieve the addresses of the signers
+  const adminAddress = await admin.getAddress();
+  const sender1Address = await sender1.getAddress();
+  const sender2Address = await sender2.getAddress();
+  const sender3Address = await sender3.getAddress();
+  const newOwnerAddress = await newOwner.getAddress();
+
+  // Set the admin address by calling the setAdmin function on the contract
+  // using the owner's signer
+  const adminTx = await contract.connect(owner).setAdmin(adminAddress);
+  console.log("adminTx", adminTx);
+
+  // Set the sender1 address by calling the setSender function on the contract
+  // using the admin's signer
+  const senderOneTx = await contract.connect(admin).setSender(sender1Address);
+  console.log("senderOneTx", senderOneTx);
+
+  // Set the sender2 address by calling the setSender function on the contract
+  // using the admin's signer
+  const senderTwoTx = await contract.connect(admin).setSender(sender2Address);
+  console.log("senderTwoTx", senderTwoTx);
+
+  // Set the sender3 address by calling the setSender function on the contract
+  // using the admin's signer
+  const senderThreeTx = await contract.connect(admin).setSender(sender3Address);
+  console.log("senderThreeTx", senderThreeTx);
+  
+  // Transfer the ownership of the contract to the newOwner address
+  // by calling the transferOwnership function on the contract
+  // using the owner's signer
+  const senderFourTx = await contract
+    .connect(owner)
+    .transferOwnership(newOwnerAddress);
+  console.log("senderFourTx", senderFourTx);
 }
 
 contractDeployment()
