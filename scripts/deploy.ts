@@ -49,6 +49,12 @@ export async function contractDeployment() {
     logicContractInterface,
     ethers.provider
   );
+  const [owner, admin, sender] = await ethers.getSigners();
+  const adminAddress = await admin.getAddress();
+  const senderAddress = await sender.getAddress();
+
+  await contract.connect(owner).setAdmin(adminAddress);
+  await contract.connect(admin).setSender(senderAddress);
 }
 
 contractDeployment()
