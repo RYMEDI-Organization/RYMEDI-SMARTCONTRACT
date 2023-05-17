@@ -12,10 +12,11 @@ import "./LibraryLock.sol";
  */
 contract Rymedi is Proxiable, AccessControl, LibraryLock {
     /// @dev variables
+    string public name;
+    uint public totalKeyCount;
+    uint public deletedKeyCount;
     mapping(bytes32 => bytes32) records;
     mapping(bytes32 => bytes32) deletedRecords;
-    bytes32[] recordKeyList;
-    bytes32[] deletedRecordKeys;
     string[] roles;
 
     /// @dev Owner - DEFAULT_ADMIN_ROLE + user roles
@@ -33,9 +34,10 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      * This is like our constructor function.
      * We are telling our proxy contract to call this function as contructor.
      */
-    function rymediInitialize() public {
+    function rymediInitialize(string memory _name) public {
         require(!initialized, "Already initalized");
         initialize();
+        name = _name;
         roles.push("DEFAULT_ADMIN_ROLE");
         roles.push("ADMIN");
         roles.push("SENDER");
@@ -52,10 +54,7 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         bytes32 key,
         bytes32 value
     ) public onlyRole(SENDER) delegatedOnly returns (bool) {
-        require(records[key] == 0, "Record's Key already exist");
-        records[key] = value;
-        recordKeyList.push(key);
-        emit AddRecord(key, value);
+        _addRecord(key, value);
         return true;
     }
 
@@ -73,11 +72,24 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
             "Lengths of keys and values arrays do not match"
         );
         for (uint i = 0; i < keys.length; i++) {
-            require(records[keys[i]] == 0, "Record's Key already exist");
-            records[keys[i]] = values[i];
-            recordKeyList.push(keys[i]);
-            emit AddRecord(keys[i], values[i]);
+            _addRecord(keys[i], values[i]);
         }
+        return true;
+    }
+
+    /**
+     * @notice Push single record - Only SENDER
+     * @param key bytes32 - sha256 hash
+     * @param value bytes32 - sha256 hash
+     */
+    function _addRecord(
+        bytes32 key,
+        bytes32 value
+    ) internal onlyRole(SENDER) delegatedOnly returns (bool) {
+        require(records[key] == 0, "Record's Key already exist");
+        records[key] = value;
+        totalKeyCount++;
+        emit AddRecord(key, value);
         return true;
     }
 
@@ -89,10 +101,10 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     function removeRecord(
         bytes32 key
     ) public onlyAdministrators delegatedOnly returns (bool) {
+        require(records[key] != 0, "No record found against this key");
         bytes32 value = records[key];
-        deletedRecordKeys.push(key);
-        deletedRecords[key] = records[key];
         records[key] = 0;
+        deletedKeyCount++;
         emit RemoveRecord(key, value);
         return true;
     }
@@ -124,19 +136,11 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      * @return deletedKeyCount Number of deleted keys
      * @return activeRecordsCount Number of Keys with Value
      */
-    function recordCount()
-        public
-        view
-        returns (
-            uint totalKeyCount,
-            uint deletedKeyCount,
-            uint activeRecordsCount
-        )
-    {
+    function recordCount() public view returns (uint, uint, uint) {
         return (
-            recordKeyList.length,
-            deletedRecordKeys.length,
-            recordKeyList.length - deletedRecordKeys.length
+            totalKeyCount,
+            deletedKeyCount,
+            totalKeyCount - deletedKeyCount
         );
     }
 
@@ -145,20 +149,6 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
      */
     function rolesList() public view returns (string[] memory) {
         return roles;
-    }
-
-    /**
-     * @notice List all keys pushed
-     */
-    function getRecordKeyList() public view returns (bytes32[] memory) {
-        return recordKeyList;
-    }
-
-    /**
-     * @notice List all deleted keys
-     */
-    function getDeletedRecordKeys() public view returns (bytes32[] memory) {
-        return deletedRecordKeys;
     }
 
     // ========================================= Modifiers ================================================================================
