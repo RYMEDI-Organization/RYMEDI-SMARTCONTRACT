@@ -15,8 +15,8 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     string public name;
     uint public totalKeyCount;
     uint public deletedKeyCount;
-    mapping(bytes32 => bytes32) records;
-    mapping(bytes32 => bytes32) deletedRecords;
+    mapping(bytes32 => string) records;
+    mapping(bytes32 => string) deletedRecords;
     string[] roles;
 
     /// @dev Owner - DEFAULT_ADMIN_ROLE + user roles
@@ -24,15 +24,14 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
     bytes32 public constant SENDER = keccak256("SENDER");
 
     /// @dev events
-    event AddRecord(bytes32 indexed key, bytes32 indexed value);
-    event RemoveRecord(bytes32 indexed key, bytes32 indexed value);
+    event AddRecord(bytes32 indexed key, string value);
+    event RemoveRecord(bytes32 indexed key, string value);
 
     // ========================================= Manage Rymedi Data =======================================================================
 
-    /*
-     * we will calculate the sha3 of the rymediInitialize() and we will pass the hash while deploying the proxy contract.
-     * This is like our constructor function.
-     * We are telling our proxy contract to call this function as contructor.
+    /**
+     * Constructor function called from Proxy contract
+     * @param _name  string - contract name or description
      */
     function rymediInitialize(string memory _name) public {
         require(!initialized, "Already initalized");
@@ -47,65 +46,67 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
 
     /**
      * @notice Push single record - Only SENDER
-     * @param key bytes32 - sha256 hash
-     * @param value bytes32 - sha256 hash
+     * @param _key bytes32 - sha256 hash
+     * @param _value string
      */
     function addRecord(
-        bytes32 key,
-        bytes32 value
-    ) public onlyRole(SENDER) delegatedOnly returns (bool) {
-        _addRecord(key, value);
-        return true;
+        bytes32 _key,
+        string memory _value
+    ) public onlyRole(SENDER) delegatedOnly {
+        _addRecord(_key, _value);
     }
 
     /**
      * @notice Push multiple records in  single transaction - Only SENDER
-     * @param keys bytes32 - sha256 hash
-     * @param values bytes32 - sha256 hash
+     * @param _keys bytes32 - sha256 hash
+     * @param _values string
      */
     function addBulkRecords(
-        bytes32[] memory keys,
-        bytes32[] memory values
-    ) public onlyRole(SENDER) delegatedOnly returns (bool) {
+        bytes32[] memory _keys,
+        string[] memory _values
+    ) public onlyRole(SENDER) delegatedOnly {
         require(
-            keys.length == values.length,
+            _keys.length == _values.length,
             "Lengths of keys and values arrays do not match"
         );
-        for (uint i = 0; i < keys.length; i++) {
-            _addRecord(keys[i], values[i]);
+        for (uint i = 0; i < _keys.length; i++) {
+            _addRecord(_keys[i], _values[i]);
         }
-        return true;
     }
 
     /**
      * @notice Push single record - Only SENDER
-     * @param key bytes32 - sha256 hash
-     * @param value bytes32 - sha256 hash
+     * @param _key bytes32 - sha256 hash
+     * @param _value string
      */
     function _addRecord(
-        bytes32 key,
-        bytes32 value
+        bytes32 _key,
+        string memory _value
     ) internal onlyRole(SENDER) delegatedOnly returns (bool) {
-        require(records[key] == 0, "Record's Key already exist");
-        records[key] = value;
+        require(getLength(records[_key]) == 0, "Record's Key already exist");
+        require(getLength(_value) != 0, "Empty value rejected");
+        records[_key] = _value;
         totalKeyCount++;
-        emit AddRecord(key, value);
+        emit AddRecord(_key, _value);
         return true;
     }
 
     /**
      * @notice Delete records against keys
-     * @param key bytes32 - sha256 hash
-     * @dev Delete keys are stored and emitted via events
+     * @param _key bytes32 - sha256 hash
+     * @dev Delete keys are emitted via events
      */
     function removeRecord(
-        bytes32 key
+        bytes32 _key
     ) public onlyAdministrators delegatedOnly returns (bool) {
-        require(records[key] != 0, "No record found against this key");
-        bytes32 value = records[key];
-        records[key] = 0;
+        require(
+            getLength(records[_key]) != 0,
+            "Remove Record failed - No record found against this key"
+        );
+        string memory value = records[_key];
+        records[_key] = "";
         deletedKeyCount++;
-        emit RemoveRecord(key, value);
+        emit RemoveRecord(_key, value);
         return true;
     }
 
@@ -120,14 +121,24 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
         updateCodeAddress(newLogicAddress, msg.sender);
     }
 
+    // =========================================  Pure functions ==========================================================================
+
+    /**
+     * @notice Fetch length of String
+     * @param _value string
+     */
+    function getLength(string memory _value) internal pure returns (uint) {
+        return bytes(_value).length;
+    }
+
     // =========================================  Getter functions ========================================================================
 
     /**
      * @notice Fetch value against key from Records
-     * @param key bytes32 - sha256 hash
+     * @param _key bytes32 - sha256 hash
      */
-    function getRecord(bytes32 key) public view returns (bytes32) {
-        return records[key];
+    function getRecord(bytes32 _key) public view returns (string memory) {
+        return records[_key];
     }
 
     /**
@@ -168,82 +179,82 @@ contract Rymedi is Proxiable, AccessControl, LibraryLock {
 
     /**
      * @notice Verify if parameter account is ADMIN
-     * @param account address
+     * @param _account address
      */
-    function isAdmin(address account) public view virtual returns (bool) {
-        return hasRole(ADMIN, account);
+    function isAdmin(address _account) public view virtual returns (bool) {
+        return hasRole(ADMIN, _account);
     }
 
     /**
      * @notice Verify if parameter account is Owner/DEFAULT_ADMIN_ROLE
-     * @param account address
+     * @param _account address
      */
-    function isOwner(address account) public view virtual returns (bool) {
-        return hasRole(DEFAULT_ADMIN_ROLE, account);
+    function isOwner(address _account) public view virtual returns (bool) {
+        return hasRole(DEFAULT_ADMIN_ROLE, _account);
     }
 
     /**
      * @notice Set role as ADMIN for the account
-     * @param account address
+     * @param _account address
      * @dev Only Owner allowed to add new Admins
      */
     function setAdmin(
-        address account
+        address _account
     ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
-        grantRole(ADMIN, account);
+        grantRole(ADMIN, _account);
     }
 
     /**
      * @notice Transfer contract Ownership
-     * @param account address
+     * @param _account address
      * @dev Remove and transfer OWNER/DEFAULT_ADMIN_ROLE role to account
      */
     function transferOwnership(
-        address account
+        address _account
     ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
-        grantRole(DEFAULT_ADMIN_ROLE, account);
+        grantRole(DEFAULT_ADMIN_ROLE, _account);
         renounceRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
      * @notice Verify if parameter account is SENDER
-     * @param account address
+     * @param _account address
      */
-    function isSender(address account) public view virtual returns (bool) {
-        return hasRole(SENDER, account);
+    function isSender(address _account) public view virtual returns (bool) {
+        return hasRole(SENDER, _account);
     }
 
     /**
      * @notice Set role as SENDER
-     * @param account address
+     * @param _account address
      * @dev Only administrators allowed to add senders
      */
     function setSender(
-        address account
+        address _account
     ) public virtual onlyAdministrators delegatedOnly {
-        grantRole(SENDER, account);
+        grantRole(SENDER, _account);
     }
 
     /**
      * @notice Remove key from ADMIN access
-     * @param account address
+     * @param _account address
      * @dev Only Owner allowed to add new Admins
      */
     function revokeAdmin(
-        address account
+        address _account
     ) public onlyRole(DEFAULT_ADMIN_ROLE) delegatedOnly {
-        revokeRole(ADMIN, account);
+        revokeRole(ADMIN, _account);
     }
 
     /**
      * @notice Remove key from SENDER access
-     * @param account address
+     * @param _account address
      * @dev Only Administrators allowed to revoke senders access
      */
     function revokeSender(
-        address account
+        address _account
     ) public onlyRole(ADMIN) delegatedOnly {
-        revokeRole(SENDER, account);
+        revokeRole(SENDER, _account);
     }
 
     // ====================================================================================================================================
