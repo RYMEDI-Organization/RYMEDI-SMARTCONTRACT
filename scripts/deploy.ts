@@ -71,27 +71,19 @@ export async function contractDeployment() {
   const setAdminTx = await contract.connect(owner).setAdmin(adminAddress);
   console.log("setAdminTx", setAdminTx);
 
-  // Set the sender1 address by calling the setSender function on the contract
-  // using the admin's signer
-  const setSenderOneTx = await contract
-    .connect(admin)
-    .setSender(process.env.SENDER_ONE_ADDRESS);
-  console.log("setSenderOneTx", setSenderOneTx);
+  // Wait for the transaction to be mined
+  await setAdminTx.wait();
 
-  // Set the sender2 address by calling the setSender function on the contract
+  // Set the sender's address by calling the setSender function on the contract
   // using the admin's signer
-  const setSenderTwoTx = await contract
-    .connect(admin)
-    .setSender(process.env.SENDER_TWO_ADDRESS);
-  console.log("setSenderTwoTx", setSenderTwoTx);
 
-  // Set the sender3 address by calling the setSender function on the contract
-  // using the admin's signer
-  const setSenderThreeTx = await contract
-    .connect(admin)
-    .setSender(process.env.SENDER_THREE_ADDRESS);
-  console.log("setSenderThreeTx", setSenderThreeTx);
+  const senderAddresses = process.env.SENDER_ADDRESSES?.split(",") ?? [];
 
+  for (const address of senderAddresses) {
+    const setSenderTx = await contract.connect(admin).setSender(address);
+    await setSenderTx.wait();
+    console.log(address, setSenderTx);
+  }
   // Transfer the ownership of the contract to the newOwner address
   // by calling the transferOwnership function on the contract
   // using the owner's signer
@@ -104,6 +96,6 @@ export async function contractDeployment() {
 contractDeployment()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error); 
+    console.error(error);
     process.exit(1);
   });
