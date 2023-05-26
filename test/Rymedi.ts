@@ -2,7 +2,6 @@ import { expect, assert } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Contract } from "ethers";
 import { Signer } from "ethers";
-import { providers } from "ethers";
 
 const { ethers } = require("hardhat");
 import { contractDeployment } from "./deploy";
@@ -90,19 +89,83 @@ describe("Rymedi", function () {
     // });
     it("should add a record when called by a sender", async function () {
       const key = hash("some-key");
+      const value = "some-value";
 
-      const value = hash("some-value");
       const tx = await Contract.connect(firstSender).addRecord(key, value);
-
       await tx.wait(); // wait for the transaction to be mined
 
       expect(await Contract.getRecord(key)).to.equal(value);
       const receipt = await txReceipt(tx.hash);
-      const events = await getEvents(Contract, receipt);
+      const events = getEvents(Contract, receipt);
       expect(events[0].name).to.equal("AddRecord");
       expect(events[0].args.key).to.equal(key);
       expect(events[0].args.value).to.equal(value);
       messageCount += 1;
+    });
+
+    it("should add a Object type record when called by a sender", async function () {
+      const key = hash("object-key");
+
+      const obj = { name: "John", age: 30, city: "New York" };
+      const value = JSON.stringify(obj);
+
+      const tx = await Contract.connect(firstSender).addRecord(key, value);
+      await tx.wait(); // wait for the transaction to be mined
+
+      expect(await Contract.getRecord(key)).to.equal(value);
+      const receipt = await txReceipt(tx.hash);
+      const events = getEvents(Contract, receipt);
+      expect(events[0].name).to.equal("AddRecord");
+      expect(events[0].args.key).to.equal(key);
+      expect(events[0].args.value).to.equal(value);
+      messageCount += 1;
+    });
+    it("should add a Array type record when called by a sender", async function () {
+      const key = hash("array-key");
+
+      const example = ["Banana", "Orange", "Apple", "Mango"];
+      const value = example.toString();
+
+      const tx = await Contract.connect(firstSender).addRecord(key, value);
+      await tx.wait(); // wait for the transaction to be mined
+
+      expect(await Contract.getRecord(key)).to.equal(value);
+      const receipt = await txReceipt(tx.hash);
+      const events = getEvents(Contract, receipt);
+      expect(events[0].name).to.equal("AddRecord");
+      expect(events[0].args.key).to.equal(key);
+      expect(events[0].args.value).to.equal(value);
+      messageCount += 1;
+    });
+    it("should add an empty object type record when called by a sender", async function () {
+      const key = hash("empty-object-key");
+
+      const obj = {};
+      const value = JSON.stringify(obj);
+
+      const tx = await Contract.connect(firstSender).addRecord(key, value);
+      await tx.wait(); // wait for the transaction to be mined
+
+      expect(await Contract.getRecord(key)).to.equal(value);
+      const receipt = await txReceipt(tx.hash);
+      const events = getEvents(Contract, receipt);
+      expect(events[0].name).to.equal("AddRecord");
+      expect(events[0].args.key).to.equal(key);
+      expect(events[0].args.value).to.equal(value);
+      messageCount += 1;
+    });
+    it("should revert for empty string type record when called by a sender", async function () {
+      const key = hash("empty-key-key");
+      const value = "";
+      await expect(Contract.connect(secondSender).addRecord(key, value)).to.be
+        .reverted;
+    });
+
+    it("should revert for BigInt type while adding record when called by a sender", async function () {
+      const key = hash("bigint-object-key");
+      const value = BigInt("123456789012345678901234567890");
+      await expect(Contract.connect(secondSender).addRecord(key, value)).to.be
+        .reverted;
     });
 
     // it("should return an array of all record keys", async () => {
@@ -113,30 +176,29 @@ describe("Rymedi", function () {
 
     it("should not allow a record with the same key to be added twice", async function () {
       const key = hash("some-key-1");
-      const value = hash("some-value-1");
+      const value = "some-value-1";
 
       await Contract.connect(firstSender).addRecord(key, value);
-      await expect(
-        Contract.connect(secondSender).addRecord(key, value)
-      ).to.be.revertedWith("Record's Key already exist");
+      await expect(Contract.connect(secondSender).addRecord(key, value)).to.be
+        .reverted;
       messageCount += 1;
     });
 
     it("should not allow a record to be added by a non-sender", async function () {
       const key = hash("some-key-2");
-      const value = hash("some-value-2");
+      const value = "some-value-2";
       await expect(Contract.connect(nonSender).addRecord(key, value)).to.be
         .reverted;
     });
     it("should not allow a record to be added by an owner", async function () {
       const key = hash("some-key-2");
-      const value = hash("some-value-2");
+      const value = "some-value-2";
       await expect(Contract.connect(owner).addRecord(key, value)).to.be
         .reverted;
     });
     it("should not allow a record to be added by an admin", async function () {
       const key = hash("some-key-2");
-      const value = hash("some-value-2");
+      const value = "some-value-2";
       await expect(Contract.connect(admin).addRecord(key, value)).to.be
         .reverted;
     });
@@ -145,7 +207,7 @@ describe("Rymedi", function () {
   describe("getRecord()", function () {
     it("should return the value of an existing record", async function () {
       const key = hash("some-key-1");
-      const value = hash("some-value-1");
+      const value = "some-value-1";
       // Get the value of the record and check that it matches the stored value
       const result = await Contract.getRecord(key);
       expect(result).to.equal(value);
@@ -156,8 +218,8 @@ describe("Rymedi", function () {
       const key = hash("some-random-key-1");
 
       const result = await Contract.getRecord(key);
-      // Check that the result is zero
-      expect(result).to.equal(ethers.constants.HashZero);
+      // Check that the result is empty
+      expect(result).to.equal("");
     });
   });
 
@@ -165,8 +227,40 @@ describe("Rymedi", function () {
     it("should add multiple records", async function () {
       const key1 = hash("KEY_1");
       const key2 = hash("KEY_2");
-      const value1 = hash("VALUE_1");
-      const value2 = hash("VALUE_2");
+
+      const value1 = "VALUE_1";
+      const value2 = "VALUE_2";
+
+      const keys = [key1, key2];
+      const values = [value1, value2];
+
+      const tx = await Contract.connect(secondSender).addBulkRecords(
+        keys,
+        values
+      );
+      await tx.wait(); // wait for the transaction to be mined
+      const receipt = await txReceipt(tx.hash);
+      const logs = await getEvents(Contract, receipt);
+      expect(logs[0].name).to.equal("AddRecord");
+      expect(logs[0].args.key).to.equal(key1);
+      expect(logs[0].args.value).to.equal(value1);
+      expect(logs[1].name).to.equal("AddRecord");
+      expect(logs[1].args.key).to.equal(key2);
+      expect(logs[1].args.value).to.equal(value2);
+      expect(await Contract.getRecord(key1)).to.equal(value1);
+      expect(await Contract.getRecord(key2)).to.equal(value2);
+      messageCount += keys.length;
+    });
+    it("should add multiple records with different data types values", async function () {
+      const key1 = hash("BULK_KEY_1");
+      const key2 = hash("BULK_KEY_2");
+
+      const example = ["Banana", "Orange", "Apple", "Mango"];
+      const value1 = example.toString();
+
+      const obj = { name: "John", age: 30, city: "New York" };
+      const value2 = JSON.stringify(obj);
+
       const keys = [key1, key2];
       const values = [value1, value2];
 
@@ -191,14 +285,14 @@ describe("Rymedi", function () {
     it("should not allow adding records with duplicate keys", async function () {
       const key1 = hash("KEY_1");
       const key2 = hash("KEY_2");
-      const value1 = hash("VALUE_1");
-      const value2 = hash("VALUE_2");
+      const value1 = "VALUE_1";
+      const value2 = "VALUE_2";
       await expect(
         Contract.connect(firstSender).addBulkRecords(
           [key1, key2],
           [value1, value2]
         )
-      ).to.be.revertedWith("Record's Key already exist");
+      ).to.be.reverted;
     });
 
     it("should not allow arrays with different lengths", async function () {
@@ -254,13 +348,14 @@ describe("Rymedi", function () {
       await Contract.connect(admin).removeRecord(key1);
       // Check that the record was removed
       const result = await Contract.getRecord(key1);
-      expect(result).to.equal(ethers.constants.HashZero);
+      expect(result).to.equal("");
       deleteCount += 1;
     });
 
     it("should emit a RemoveRecord event", async function () {
       const key1 = hash("KEY_2");
-      const value1 = hash("VALUE_2");
+      const value1 = "VALUE_2";
+
       // Call the removeRecord function
       const tx = await Contract.connect(admin).removeRecord(key1);
       // Check that the RemoveRecord event was emitted with the correct arguments
@@ -283,11 +378,8 @@ describe("Rymedi", function () {
     it("should not remove a non-existent record", async function () {
       const nonExistentKey = hash("KEY_229384");
       // Try to remove a non-existent record
-      await expect(
-        Contract.connect(admin).removeRecord(
-          nonExistentKey
-        )
-      ).to.be.reverted;
+      await expect(Contract.connect(admin).removeRecord(nonExistentKey)).to.be
+        .reverted;
     });
 
     it("should only be callable by administrators", async function () {

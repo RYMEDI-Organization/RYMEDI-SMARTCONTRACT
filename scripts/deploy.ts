@@ -1,8 +1,9 @@
 import { Contract } from "ethers";
-
+import * as dotenv from "dotenv";
 const { ethers } = require("hardhat");
 const Web3 = require("web3");
 const web3 = new Web3();
+dotenv.config();
 
 // Define the logic contract
 async function deployLogicContract() {
@@ -44,7 +45,7 @@ export async function contractDeployment() {
 
       inputs: [{ type: "string", name: "_name" }],
     },
-    ["RymediTesting"]
+    [process.env.CONTRACT_NAME]
   );
   const proxyContract = await deployProxyContract(encodedData, logicContract);
 
@@ -60,43 +61,44 @@ export async function contractDeployment() {
   );
 
   // Destructuring assignment to obtain the signers
-  const [owner, admin, sender1, sender2, sender3, newOwner] =
-    await ethers.getSigners();
+  const [owner, admin] = await ethers.getSigners();
 
   // Retrieve the addresses of the signers
   const adminAddress = await admin.getAddress();
-  const sender1Address = await sender1.getAddress();
-  const sender2Address = await sender2.getAddress();
-  const sender3Address = await sender3.getAddress();
-  const newOwnerAddress = await newOwner.getAddress();
 
   // Set the admin address by calling the setAdmin function on the contract
   // using the owner's signer
-  const adminTx = await contract.connect(owner).setAdmin(adminAddress);
-  console.log("adminTx", adminTx);
+  const setAdminTx = await contract.connect(owner).setAdmin(adminAddress);
 
-  // Set the sender1 address by calling the setSender function on the contract
+  // Wait for the transaction to be mined
+  await setAdminTx.wait();
+  console.log("setAdminTx", setAdminTx);
+  // Set the sender's address by calling the setSender function on the contract
   // using the admin's signer
-  const senderOneTx = await contract.connect(admin).setSender(sender1Address);
-  console.log("senderOneTx", senderOneTx);
 
-  // Set the sender2 address by calling the setSender function on the contract
-  // using the admin's signer
-  const senderTwoTx = await contract.connect(admin).setSender(sender2Address);
-  console.log("senderTwoTx", senderTwoTx);
+  const senderAddresses = process.env.SENDER_ADDRESSES?.split(",") ?? [];
 
-  // Set the sender3 address by calling the setSender function on the contract
-  // using the admin's signer
-  const senderThreeTx = await contract.connect(admin).setSender(sender3Address);
-  console.log("senderThreeTx", senderThreeTx);
-  
+  for (const [i, address] of senderAddresses.entries()) {
+    const setSenderTx = await contract.connect(admin).setSender(address);
+    await setSenderTx.wait();
+    console.log(`Setting sender ${i + 1}: ${address}`);
+    console.log("Transaction details:", setSenderTx);
+  }
   // Transfer the ownership of the contract to the newOwner address
   // by calling the transferOwnership function on the contract
   // using the owner's signer
-  const senderFourTx = await contract
+  const transferOwnerShipTx = await contract
     .connect(owner)
-    .transferOwnership(newOwnerAddress);
-  console.log("senderFourTx", senderFourTx);
+    .transferOwnership(process.env.NEW_OWNER_ADDRESS);
+  console.log("transferOwnerShipTx", transferOwnerShipTx);
+  // Wait for the transaction to be mined
+  await transferOwnerShipTx.wait();
+
+  // Printing the admin address, owner address, and sender addresses
+  console.log("Owner Address:", owner.address);
+  console.log("New Owner Address", process.env.NEW_OWNER_ADDRESS);
+  console.log("Admin Address:", adminAddress);
+  console.log("Sender Addresses:", senderAddresses);
 }
 
 contractDeployment()
