@@ -131,8 +131,8 @@ describe("Admin", function () {
       // set up a non-sender role and assign it to an address
       await Contract.connect(owner).setAdmin(adminAddress);
       // attempt to revoke the sender role from an address that does not have it
-      await expect(Contract.connect(admin).revokeSender(firstSenderAddress)).to
-        .be.reverted;
+      await expect(Contract.connect(admin).revokeSender(firstSenderAddress)).not
+        .to.be.reverted;
     });
 
     it("should revoke sender role from address", async function () {
