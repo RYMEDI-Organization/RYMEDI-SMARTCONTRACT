@@ -11,7 +11,11 @@ async function deployLogicContract() {
   const logicContract = await LogicContract.deploy();
   await logicContract.deployed();
 
+  // Wait for the transaction to be mined
+  await logicContract.deployTransaction.wait();
+
   console.log("LogicContract deployed to:", logicContract.address);
+  console.log("Transaction details", logicContract.deployTransaction);
   return logicContract;
 }
 
@@ -26,8 +30,12 @@ async function deployProxyContract(
     logicContract.address
   );
   await proxyContract.deployed();
+  // Wait for the transaction to be mined
+  await proxyContract.deployTransaction.wait();
 
   console.log("ProxyContract deployed to:", proxyContract.address);
+  console.log("Transaction details", proxyContract.deployTransaction);
+
   return proxyContract;
 }
 
